@@ -65,82 +65,11 @@ const Outcome = ({won, reset}) => {
   );
 }
 
-// const Game = () => {
-//   const [state, setState] = useState({
-//     secret: 3, // change back later
-//     results: [],
-//     remaining: 8,
-//     errString: ""
-//   })
-
-//   const resetGame = () => {
-//     setState({
-//       secret: 3, // change back later
-//       results: [],
-//       remaining: 8,
-//       errString: ""
-//     })
-//   }
-
-//   const guess = (guess) => {
-//     let nextResult = testSecret(guess, state.secret);
-//     if (nextResult.errorMsg) {
-//       setState({
-//         ...state,
-//         errString: nextResult.errorMsg
-//       })
-//     } else {
-//       setState({
-//         ...state,
-//         results: [...state.results, nextResult],
-//         remaining: state.remaining - 1,
-//         errString: ""
-//       })
-//     }
-//   }
-
-//   const isGameWon = gameOver(state.secret, state.results);
-//   const isGameLost = state.remaining === 0;
-  
-//   if (isGameWon) {
-//     return <Outcome won={true} secret={state.secret} reset={resetGame}/>
-//   } else if (isGameLost) {
-//     return <Outcome won={false} secret={state.secret} reset={resetGame}/>
-//   } else {
-//     return (
-//       <div className="App">
-//         <div className="container">
-//           <div className="row">
-//             <div className="column column-33">
-//               <h2>Guesses Remaining: {state.remaining}</h2>
-//             </div>
-//           </div>
-//           <Error errString={state.errString}/>
-//           <Controls resetGame={resetGame} guess={guess}/>
-//           <div className="row">
-//             <div className="column column-10"></div>
-//             <div className="column column-20"><h4>Guess</h4></div>
-//             <div className="column column-25"><h4>Result</h4></div>
-//           </div>
-//           {state.results.map((result, index) => {
-//             return (
-//               <div className="row" key={index}>
-//                 <div className="column column-10"></div>
-//                 <div className="column column-20"><b>{result.guess}</b></div>
-//                 <div className="column column-25"><b>{result.hint}</b></div>
-//               </div>
-//             );
-//           })}
-//         </div>
-//       </div>
-//     );
-//   }
-// }
-
 const Game = () => {
 
   
 
+  // setup to be called later
   const [state, setState] = useState({
     results: [],
     remaining: 8,
