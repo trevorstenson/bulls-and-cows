@@ -3,14 +3,11 @@ export SECRET_KEY_BASE=W68eso5YQOlbtvSNUR50N/HDWj6IaEhAwMR3LtzuBEQAefwYVbX84bvoT
 export MIX_ENV=prod
 export PORT=4780
 
-echo "Stopping old copy of app, if any..."
+echo "Stopping old copy..."
 
-/home/trevor/www/hw05.downwind.xyz/cs4550-hw04/_build/prod/rel/practice/bin/practice stop || true
+/home/trevor/www/hw05.downwind.xyz/bulls-and-cows/_build/prod/rel/bulls/bin/bulls stop || true
 
 echo "Starting app..."
 
-/home/trevor/www/hw04.downwind.xyz/cs4550-hw04/_build/prod/rel/practice/bin/practice start
 
-# TODO: Add a systemd service file
-#       to start your app on system boot.
-
+/home/trevor/www/hw05.downwind.xyz/bulls-and-cows/_build/prod/rel/bulls/bin/bulls start
