@@ -53,7 +53,6 @@ const Outcome = ({won, reset}) => {
       <div className="row">
         <div className="column column-50">
           <h2>{endMsg}</h2>
-          {/* <h2>{endMsg} The secret value was: {secret}</h2> */}
         </div>
       </div>
       <div className="row">
@@ -66,9 +65,6 @@ const Outcome = ({won, reset}) => {
 }
 
 const Game = () => {
-
-  
-
   // setup to be called later
   const [state, setState] = useState({
     results: [],
@@ -118,7 +114,7 @@ const Game = () => {
               <div className="row" key={index}>
                 <div className="column column-10"></div>
                 <div className="column column-20"><b>{result.guess}</b></div>
-                <div className="column column-25"><b>{result.hint}</b></div>
+                <div className="column column-25"><b>{`${result.bulls} bulls, ${result.cows} cows`}</b></div>
               </div>
             );
           })}

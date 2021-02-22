@@ -10,12 +10,6 @@ defmodule Bulls.Game do
   end
 
   def view(state) do
-    # %{
-    #   results: state[:results],
-    #   remaining: state[:remaining],
-    #   errString: state[:errString],
-    #   gameWon: state[:gameWon]
-    # }
     Map.delete(state, :secret)
   end
 
@@ -33,8 +27,7 @@ defmodule Bulls.Game do
     guess_chars = String.codepoints(guess)
     place_matches = place_matches(guess_chars, state[:secret])
     value_matches = value_matches(guess_chars, state[:secret]) - place_matches
-    hint_str = "#{place_matches} bulls, #{value_matches} cows"
-    %{state | results: state[:results] ++ [%{guess: guess, hint: hint_str}]}
+    %{state | results: state[:results] ++ [%{guess: guess, bulls: place_matches, cows: value_matches}]}
   end
 
   def value_matches(chars, secret) do
