@@ -23,9 +23,10 @@
 # echo "Starting app..."
 
 export MIX_ENV=prod
-export PORT=4780
+export PORT=4792
 export SECRET_KEY_BASE=W68eso5YQOlbtvSNUR50N/HDWj6IaEhAwMR3LtzuBEQAefwYVbX84bvoTA7XtiGi
 
+mix local.rebar --force
 mix local.hex --force
 mix deps.get --only prod
 mix compile
