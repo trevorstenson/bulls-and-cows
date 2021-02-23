@@ -3,7 +3,6 @@ defmodule Bulls.Game do
     %{
       secret: random_secret(),
       results: [],
-      remaining: 8,
       errString: "",
       gameWon: false
     }
@@ -14,7 +13,6 @@ defmodule Bulls.Game do
   end
 
   def guess(state, guess) do
-    state = %{state | remaining: (state[:remaining] - 1)}
     cond do
       guess == state[:secret] -> %{state | gameWon: true}
       !is_four(guess) -> %{state | errString: "Guess must be a length of four."}

@@ -25,7 +25,7 @@ const Controls = ({resetGame, guess}) => {
           <input type="text" value={input} onChange={e => setInput(e.target.value)} onKeyPress={catchEnter} maxLength="4"/>
         </div>
         <div className="column column-25">
-          <button className="button" onClick={e => submitGuess(input)}>Guess</button>
+          <button className="button" onClick={() => submitGuess(input)}>Guess</button>
           <button className="button" onClick={resetGame}>Reset</button>
         </div>
       </div>
@@ -33,7 +33,7 @@ const Controls = ({resetGame, guess}) => {
 }
 
 const Error = ({errString}) => {
-  if (errString  === "") {
+  if (errString === "") {
     return null;
   } else {
     return (
@@ -85,7 +85,6 @@ const Game = () => {
   // setup to be called later
   const [state, setState] = useState({
     results: [],
-    remaining: 8,
     errString: "",
     gameWon: false
   })
@@ -104,7 +103,7 @@ const Game = () => {
   }
 
   const isGameWon = state.gameWon;
-  const isGameLost = !state.gameWon && state.remaining === 0;
+  const isGameLost = !state.gameWon; //Fixme: New rules for won vs lost due to new game rules
 
   // yes ik this is ugly but functionality first beauty later \o/
   let mainContent = null;

@@ -1,4 +1,4 @@
-defmodule Bulls.BackupAgent do
+defmodule Bulls.StateAgent do
   use Agent
 
   # This is basically just a global mutable map.
@@ -8,15 +8,15 @@ defmodule Bulls.BackupAgent do
     Agent.start_link(fn -> %{} end, name: __MODULE__)
   end
 
-  def put(name, val) do
+  def put(key, val) do
     Agent.update __MODULE__, fn state ->
-      Map.put(state, name, val)
+      Map.put(state, key, val)
     end
   end
 
-  def get(name) do
+  def get(key) do
     Agent.get __MODULE__, fn state ->
-      Map.get(state, name)
+      Map.get(state, key)
     end
   end
 end

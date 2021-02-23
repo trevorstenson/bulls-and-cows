@@ -16,7 +16,7 @@ defmodule Bulls.GameServer do
   end
 
   def start_link(name) do
-    game = Bulls.BackupAgent.get(name) || Bulls.Game.new()
+    game = Bulls.StateAgent.get(name) || Bulls.Game.new()
     GenServer.start_link(__MODULE__, game, name: reg(name))
   end
 
@@ -34,7 +34,7 @@ defmodule Bulls.GameServer do
 
   def handle_call({:guess, name, guess}, _from, game) do
     game = Bulls.Game.guess(game, guess)
-    Bulls.BackupAgent.put(name, game)
+    Bulls.StateAgent.put(name, game)
     {:reply, game, game}
   end
 
