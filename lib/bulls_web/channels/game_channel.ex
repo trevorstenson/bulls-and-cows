@@ -28,6 +28,10 @@ defmodule BullsWeb.GameChannel do
     {:reply, {:ok, view}, socket}
   end
 
+  def handle_in("new_player", %{"username" => username, "game" => game}, socket) do
+
+  end
+
   # Channels can be used in a request/response fashion
   # by sending replies to requests from the client
   @impl true

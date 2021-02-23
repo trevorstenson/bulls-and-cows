@@ -64,6 +64,23 @@ const Outcome = ({won, reset}) => {
   );
 }
 
+const NavBar = ({loggedIn}) => {
+  const [game, setGame] = useState("");
+  const [username, setUsername] = useState("");
+
+  const setupPlayer = () => {
+    ch_push({username: username, game: game}, 'new_player');
+  }
+
+  return (
+    <div id="navbar">
+      <input type="text" onChange={e => setGame(e.target.value)}/>
+      <input type="text" value={"will style later"} onChange={e => setUsername(e.target.value)}/>
+      <button className="button" onClick={setupPlayer}>Login</button>
+    </div>
+  )
+}
+
 const Game = () => {
   // setup to be called later
   const [state, setState] = useState({
@@ -88,14 +105,16 @@ const Game = () => {
 
   const isGameWon = state.gameWon;
   const isGameLost = !state.gameWon && state.remaining === 0;
-  
+
+  // yes ik this is ugly but functionality first beauty later \o/
+  let mainContent = null;
+
   if (isGameWon) {
-    return <Outcome won={true} reset={resetGame}/>
+    mainContent = <Outcome won={true} reset={resetGame}/>
   } else if (isGameLost) {
-    return <Outcome won={false} reset={resetGame}/>
+    mainContent = <Outcome won={false} reset={resetGame}/>
   } else {
-    return (
-      <div className="App">
+    mainContent =
         <div className="container">
           <div className="row">
             <div className="column column-33">
@@ -119,9 +138,14 @@ const Game = () => {
             );
           })}
         </div>
-      </div>
-    );
   }
+
+  return (
+    <div className="App">
+      <NavBar/>
+      {mainContent}
+    </div>
+  );
 }
 
 export default Game;
