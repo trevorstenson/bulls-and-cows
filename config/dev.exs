@@ -6,7 +6,7 @@ use Mix.Config
 # The watchers configuration can be used to run external
 # watchers to your application. For example, we use it
 # with webpack to recompile .js and .css sources.
-config :bulls, BullsWeb.Endpoint,
+config :bulls_hw06, BullsWeb.Endpoint,
   http: [port: 4000],
   debug_errors: true,
   code_reloader: true,
@@ -46,7 +46,7 @@ config :bulls, BullsWeb.Endpoint,
 # different ports.
 
 # Watch static and templates for browser reloading.
-config :bulls, BullsWeb.Endpoint,
+config :bulls_hw06, BullsWeb.Endpoint,
   live_reload: [
     patterns: [
       ~r"priv/static/.*(js|css|png|jpeg|jpg|gif|svg)$",

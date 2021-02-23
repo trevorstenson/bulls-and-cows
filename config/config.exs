@@ -8,7 +8,7 @@
 use Mix.Config
 
 # Configures the endpoint
-config :bulls, BullsWeb.Endpoint,
+config :bulls_hw06, BullsWeb.Endpoint,
   url: [host: "localhost"],
   secret_key_base: "E5bdnq2I+huiSeIxerSoG4Kvn42A1+3jh/eAwm/LH5tV95EM/dEZuaCoKz27hTBG",
   render_errors: [view: BullsWeb.ErrorView, accepts: ~w(html json), layout: false],
