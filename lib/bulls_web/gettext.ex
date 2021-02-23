@@ -20,5 +20,5 @@ defmodule BullsWeb.Gettext do
 
   See the [Gettext Docs](https://hexdocs.pm/gettext) for detailed usage.
   """
-  use Gettext, otp_app: :bulls
+  use Gettext, otp_app: :bulls_hw06
 end

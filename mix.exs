@@ -3,7 +3,7 @@ defmodule Bulls.MixProject do
 
   def project do
     [
-      app: :bulls,
+      app: :bulls_hw06,
       version: "0.1.0",
       elixir: "~> 1.7",
       elixirc_paths: elixirc_paths(Mix.env()),
