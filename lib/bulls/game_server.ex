@@ -1,6 +1,9 @@
 defmodule Bulls.GameServer do
   use GenServer
 
+  alias Bulls.StateAgent
+  alias Bulls.Game
+
   def reg(name) do
     {:via, Registry, {Bulls.GameReg, name}}
   end

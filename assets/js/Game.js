@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ch_join, ch_push } from "./socket"
+import { ch_join, ch_push} from "./socket"
 import '../css/Game.scss'
 
 const Controls = ({resetGame, guess}) => {
@@ -73,20 +73,33 @@ const NavBar = ({loggedIn}) => {
   }
 
   return (
-    <div id="navbar">
-      <input type="text" onChange={e => setGame(e.target.value)}/>
-      <input type="text" value={"will style later"} onChange={e => setUsername(e.target.value)}/>
-      <button className="button" onClick={setupPlayer}>Login</button>
+    <span>
+    <div id="navbar" className="row">
+      <div className="column">
+        <label htmlFor="game">Game:</label>
+        <input type="text" id="game" onChange={e => setGame(e.target.value)}/>
+      </div>
+      <div className="column">
+        <label htmlFor="username">Username:</label>
+        <input type="text" id="username" value={"will style later"} onChange={e => setUsername(e.target.value)}/>
+      </div>
     </div>
-  )
+      <div className="row-center">
+        <button className="button" id="login-button" onClick={setupPlayer}>Login</button>
+      </div>
+    </span>
+  );
 }
 
 const Game = () => {
   // setup to be called later
   const [state, setState] = useState({
+    user: "",
+    game: "",
     results: [],
     errString: "",
     gameWon: false
+
   })
 
   useEffect(() => {
@@ -108,7 +121,7 @@ const Game = () => {
   // yes ik this is ugly but functionality first beauty later \o/
   let mainContent = null;
 
-  if (isGameWon) {
+   if (isGameWon) {
     mainContent = <Outcome won={true} reset={resetGame}/>
   } else if (isGameLost) {
     mainContent = <Outcome won={false} reset={resetGame}/>

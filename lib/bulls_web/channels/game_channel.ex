@@ -1,12 +1,18 @@
 defmodule BullsWeb.GameChannel do
   use BullsWeb, :channel
 
+  alias Bulls.Game
+  alias Bulls.GameServer
+
   @impl true
-  def join("game:" <> _id, payload, socket) do
+  def join("game:" <> name, payload, socket) do
     if authorized?(payload) do
-      game = Bulls.Game.new
-      socket = assign(socket, :game, game)
-      view = Bulls.Game.view(game)
+      GameServer.start(name) # Don't want to use this one anymore?
+      socket = socket
+      |> assign(:name, name)
+      |> assign(:user, "")
+      game = GameServer.peek(name)
+      view = Game.view(game, "")
       {:ok, view, socket}
     else
       {:error, %{reason: "unauthorized"}}
@@ -28,8 +34,16 @@ defmodule BullsWeb.GameChannel do
     {:reply, {:ok, view}, socket}
   end
 
-  def handle_in("new_player", %{"username" => username, "game" => game}, socket) do
+  def handle_in("new_player", %{"username" => user_name, "game" => game_name}, socket) do
+    GameServer.start(game_name) # Is this idempotent, will I get the existing server?
+    socket = socket
+             |> assign(:game_name, game_name)
+             |> assign(:user_name, user_name)
 
+    view = GameServer.peek(game_name)
+           |> Game.view(user_name)
+
+    {:reply, {:ok, view}, socket}
   end
 
   # Channels can be used in a request/response fashion

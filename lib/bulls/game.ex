@@ -2,22 +2,40 @@ defmodule Bulls.Game do
   def new do
     %{
       secret: random_secret(),
-      results: [],
-      errString: "",
-      gameWon: false
+      gameOver: false,
+      players: %{},
     }
   end
 
-  def view(state) do
-    Map.delete(state, :secret)
+  def register_player(state, username) do
+    players = state[:players]
+              |> Map.put(username, %{results: [], gameWon: false, errString: ""})
+
+    %{state | players: players}
   end
 
-  def guess(state, guess) do
+  def view(state, username) do
+    view = state[:players][:username]
+           |> Map.put(:gameOver, state[:gameOver])
+
+    view
+  end
+
+  def guess(state, username, guess) do
     cond do
-      guess == state[:secret] -> %{state | gameWon: true}
-      !is_four(guess) -> %{state | errString: "Guess must be a length of four."}
-      !is_unique(guess) -> %{state | errString: "Ensure your input is four unique digits."}
-      is_four(guess) and is_unique(guess) -> calculate_match(state, guess)
+      guess == state[:secret] ->
+        player = state[:players][username]
+                 |> Map.replace(:gameWon, true)
+        Map.replace(state, :players, Map.replace(state[:players], username, player))
+      !is_four(guess) ->
+        player = state[:players][username]
+                 |> Map.replace(:errString, "Guess must be a length of four.")
+        Map.replace(state, :players, Map.replace(state[:players], username, player))
+      !is_unique(guess) ->
+        player = state[:players][username]
+                 |> Map.replace(:errString, "Ensure your input is four unique digits.")
+        Map.replace(state, :players, Map.replace(state[:players], username, player))
+      is_four(guess) and is_unique(guess) -> calculate_match(state, username, guess)
     end
   end
 
@@ -25,22 +43,32 @@ defmodule Bulls.Game do
     guess_chars = String.codepoints(guess)
     place_matches = place_matches(guess_chars, state[:secret])
     value_matches = value_matches(guess_chars, state[:secret]) - place_matches
-    %{state | results: state[:results] ++ [%{guess: guess, bulls: place_matches, cows: value_matches}]}
+
+    player = state[:players][username]
+    player = %{player | results: player[:results] ++ [%{guess: guess, bulls: place_matches, cows: value_matches}]}
+
+    %{state | players: %{state[:players] | username: player}}
+
   end
 
   def value_matches(chars, secret) do
-    Enum.filter(chars, fn c -> String.contains?(secret, c) end) |> length
+    Enum.filter(chars, fn c -> String.contains?(secret, c) end)
+    |> length
   end
 
   def place_matches(chars, secret) do
     chars
     |> Enum.with_index
-    |> Enum.map(fn {c, i} ->
-      [c, String.at(secret, i)]
-    end)
-    |> Enum.filter(fn [a, b] ->
-      a == b
-    end)
+    |> Enum.map(
+         fn {c, i} ->
+           [c, String.at(secret, i)]
+         end
+       )
+    |> Enum.filter(
+         fn [a, b] ->
+           a == b
+         end
+       )
     |> length
   end
 
