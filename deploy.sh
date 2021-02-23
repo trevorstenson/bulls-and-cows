@@ -26,6 +26,7 @@ export MIX_ENV=prod
 export PORT=4780
 export SECRET_KEY_BASE=W68eso5YQOlbtvSNUR50N/HDWj6IaEhAwMR3LtzuBEQAefwYVbX84bvoTA7XtiGi
 
+mix local.hex --force
 mix deps.get --only prod
 mix compile
 
