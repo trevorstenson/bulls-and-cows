@@ -39,7 +39,7 @@ defmodule Bulls.Game do
     end
   end
 
-  def calculate_match(state, guess) do
+  def calculate_match(state, username, guess) do
     guess_chars = String.codepoints(guess)
     place_matches = place_matches(guess_chars, state[:secret])
     value_matches = value_matches(guess_chars, state[:secret]) - place_matches
