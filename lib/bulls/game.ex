@@ -15,7 +15,7 @@ defmodule Bulls.Game do
   end
 
   def view(state, username) do
-    view = state[:players][:username]
+    view = state[:players][username]
            |> Map.put(:gameOver, state[:gameOver])
 
     view
@@ -25,16 +25,19 @@ defmodule Bulls.Game do
     cond do
       guess == state[:secret] ->
         player = state[:players][username]
-                 |> Map.replace(:gameWon, true)
+                 |> Map.replace(:gameWon, true) # Todo: Should we log the guess as well?
         Map.replace(state, :players, Map.replace(state[:players], username, player))
+
       !is_four(guess) ->
         player = state[:players][username]
                  |> Map.replace(:errString, "Guess must be a length of four.")
         Map.replace(state, :players, Map.replace(state[:players], username, player))
+
       !is_unique(guess) ->
         player = state[:players][username]
                  |> Map.replace(:errString, "Ensure your input is four unique digits.")
         Map.replace(state, :players, Map.replace(state[:players], username, player))
+
       is_four(guess) and is_unique(guess) -> calculate_match(state, username, guess)
     end
   end
@@ -47,8 +50,8 @@ defmodule Bulls.Game do
     player = state[:players][username]
     player = %{player | results: player[:results] ++ [%{guess: guess, bulls: place_matches, cows: value_matches}]}
 
-    %{state | players: %{state[:players] | username: player}}
-
+    players = Map.replace(state[:players], username, player)
+    %{state | players: players}
   end
 
   def value_matches(chars, secret) do
