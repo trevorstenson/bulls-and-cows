@@ -5,13 +5,30 @@ let socket = new Socket("/socket", {params: {token: window.userToken}})
 // Finally, connect to the socket:
 socket.connect()
 
-let channel = socket.channel("game:1", {});
+let gameChannel = null;
+
+const setChannel = (gameName, userName) => {
+  gameChannel = socket.channel(`game:${gameName}`, {username: userName});
+}
+
+const connectChannel = (userName) => {
+  gameChannel.join()
+       .receive("ok", (res) => {
+         console.log('fuck me')
+         ch_push({username: userName}, 'info')
+        //  state_update(res);
+       })
+       .receive("error", resp => { console.log("Unable to join", resp) });
+}
 
 let state = {
+  user: "",
+  game: "",
   results: [],
   remaining: 8,
   errString: "",
-  gameWon: false
+  gameWon: false,
+  type: null
 }
 
 let callback = null;
@@ -24,19 +41,17 @@ const state_update = (st) => {
   }
 }
 
-export const ch_join = (cb) => {
+const ch_join = (cb) => {
   callback = cb;
   callback(state);
 }
 
-export const ch_push = (data, type) => {
-  channel.push(type, data)
+const ch_push = (data, type) => {
+  gameChannel.push(type, data)
          .receive("ok", state_update)
          .receive("error", resp => { console.log("Unable to push", resp) });
 }
 
-channel.join()
-       .receive("ok", state_update)
-       .receive("error", resp => { console.log("Unable to join", resp) });
+export { ch_join, ch_push, setChannel, connectChannel }
 
-export default socket;
+// export default socket;

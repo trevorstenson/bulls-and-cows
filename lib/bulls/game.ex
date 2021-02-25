@@ -4,6 +4,7 @@ defmodule Bulls.Game do
       secret: random_secret(),
       gameOver: false,
       players: %{},
+      observers: MapSet.new(),
       running: false,
     }
   end
@@ -11,36 +12,55 @@ defmodule Bulls.Game do
   def register_player(state, username) do
     players = state[:players]
               |> Map.put(username, %{results: [], gameWon: false, errString: "", ready: false})
-
     %{state | players: players}
   end
 
   def deregister_player(state, username) do
     players = Map.delete(state[:players], username)
+    %{state | players: players}
+  end
 
+  def register_observer(state, username) do
+    observers = MapSet.put(state[:observers], username)
+    %{state | observers: observers}
+  end
+
+  def deregister_observer(state, username) do
+    observers = MapSet.delete(state[:observers], username)
+    %{state | observers: observers}
+  end
+
+  def toggle_ready(state, username) do
+    player = Map.get(state[:players], username)
+    new_player = Map.put(player, :ready, !player[:ready])
+    players = Map.put(state[:players],username, new_player)
     %{state | players: players}
   end
 
   def players_ready?(state) do
-    players = state[:players]
-              |> Map.toList
+    players = Map.to_list(state[:players])
 
     Enum.all?(players, fn {x, y} -> y[:ready] end)
   end
 
   def game_running?(state) do
-    state[:ready]
+    state[:running]
   end
 
   def start_game(state) do
-    %{state | ready: true}
+    %{state | running: true}
   end
 
   def view(state, username) do
-    view = state[:players][username]
-           |> Map.put(:gameOver, state[:gameOver])
-
-    view
+    # return map + gameOver, or this shitty default map im using
+    # so i dont have to add conditional checks to all the state in react
+    # DONT HATE ME ILL FIX IT LATER
+    view_state =
+      cond do
+        Map.has_key?(state[:players], username) -> Map.put(state[:players][username], :gameOver, state[:gameOver])
+        true -> %{results: [], gameWon: false, errString: "", ready: false} # equivalent to new player array
+      end
+    Map.put(view_state, :running, state[:running])
   end
 
   def guess(state, username, guess) do
