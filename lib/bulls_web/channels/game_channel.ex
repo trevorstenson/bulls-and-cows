@@ -4,44 +4,39 @@ defmodule BullsWeb.GameChannel do
   alias Bulls.Game
   alias Bulls.GameServer
 
-  @impl true
-  def join("game:" <> name, payload, socket) do
-    if authorized?(payload) do
-      GameServer.start(name) # Don't want to use this one anymore?
-      socket = socket
-               |> assign(:name, name)
-               |> assign(:user, "")
-      game = GameServer.peek(name)
-      view = Game.view(game, "")
-      {:ok, view, socket}
-    else
-      {:error, %{reason: "unauthorized"}}
-    end
-  end
 
   def handle_in("guess", payload, socket) do
-    old_game = socket.assigns[:game]
-    new_game = Bulls.Game.guess(old_game, payload)
-    socket = assign(socket, :game, new_game)
-    view = Bulls.Game.view(new_game)
+    game = socket.assigns[:game]
+    user = socket.assigns[:user]
+    type = socket.assigns[:type] # May not be necessary as should always be player
+
+    game = Bulls.Game.guess(game, user, payload)
+    socket = assign(socket, :game, game)
+
+    view = Bulls.Game.view(game, user)
+           |> Map.put(:type, type)
     {:reply, {:ok, view}, socket}
   end
 
-  def handle_in("reset", _, socket) do
-    new_game = Bulls.Game.new
-    socket = assign(socket, :game, new_game)
-    view = Bulls.Game.view(new_game)
-    {:reply, {:ok, view}, socket}
+  def handle_in("logout", _, socket) do
+    socket = assign(:game, "")
+             |> assign(:user, "")
+
+    {:reply, {:ok, %{}}, socket}
   end
 
+  # FIXME: Currently players that enter become observers, technically they should just be immediately required to choose.
+  #   That being said, I am not certain I care as the logic is almost certainly more costly than the points
   def handle_in("join_game", %{"username" => user_name, "game" => game_name}, socket) do
     GameServer.start(game_name) # Is this idempotent, will I get the existing server?
     socket = socket
              |> assign(:game_name, game_name)
              |> assign(:user_name, user_name)
+             |> assign(:type, :observer)
 
     view = GameServer.peek(game_name)
            |> Game.view(user_name)
+           |> Map.put(:type, :observer)
 
     {:reply, {:ok, view}, socket}
   end
@@ -50,13 +45,20 @@ defmodule BullsWeb.GameChannel do
     game = socket.assigns[:game_name]
     user = socket.assigns[:user_name]
 
-    # FIXME: Add some check for whether or not the game has begun
+    if Game.game_running?(game) do
+      {:error, %{reason: "Cannot become a player during a game"}}
+    else
+      view = GameServer.peek(game)
+             |> Game.register_player(user)
+             |> Game.view(user)
+             |> Map.put(:type, :player)
 
-    game = GameServer.peek(game)
-           |> Game.register_player(user)
-           |> Game.view(user)
 
-    {:reply, {:ok, game}, socket}
+      socket = socket.assign(:type, :player)
+
+
+      {:reply, {:ok, view}, socket}
+    end
   end
 
   def handle_in("become_observer", _, socket) do
@@ -66,10 +68,14 @@ defmodule BullsWeb.GameChannel do
     if Game.game_running?(game) do
       {:error, %{reason: "Cannot become an observer during a game"}}
     else
-      game = GameServer.peek(game)
+      view = GameServer.peek(game)
              |> Game.deregister_player(user)
              |> Game.view(user)
-      {:reply, {:ok, game}, socket}
+             |> Map.put(:type, :observer)
+
+      socket = socket.assign(:type, :observer)
+
+      {:reply, {:ok, view}, socket}
     end
   end
 
