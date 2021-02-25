@@ -4,14 +4,36 @@ defmodule Bulls.Game do
       secret: random_secret(),
       gameOver: false,
       players: %{},
+      running: false,
     }
   end
 
   def register_player(state, username) do
     players = state[:players]
-              |> Map.put(username, %{results: [], gameWon: false, errString: ""})
+              |> Map.put(username, %{results: [], gameWon: false, errString: "", ready: false})
 
     %{state | players: players}
+  end
+
+  def deregister_player(state, username) do
+    players = Map.delete(state[:players], username)
+
+    %{state | players: players}
+  end
+
+  def players_ready?(state) do
+    players = state[:players]
+              |> Map.toList
+
+    Enum.all?(players, fn {x, y} -> y[:ready] end)
+  end
+
+  def game_running?(state) do
+    state[:ready]
+  end
+
+  def start_game(state) do
+    %{state | ready: true}
   end
 
   def view(state, username) do

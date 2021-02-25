@@ -9,8 +9,8 @@ defmodule BullsWeb.GameChannel do
     if authorized?(payload) do
       GameServer.start(name) # Don't want to use this one anymore?
       socket = socket
-      |> assign(:name, name)
-      |> assign(:user, "")
+               |> assign(:name, name)
+               |> assign(:user, "")
       game = GameServer.peek(name)
       view = Game.view(game, "")
       {:ok, view, socket}
@@ -34,7 +34,7 @@ defmodule BullsWeb.GameChannel do
     {:reply, {:ok, view}, socket}
   end
 
-  def handle_in("new_player", %{"username" => user_name, "game" => game_name}, socket) do
+  def handle_in("join_game", %{"username" => user_name, "game" => game_name}, socket) do
     GameServer.start(game_name) # Is this idempotent, will I get the existing server?
     socket = socket
              |> assign(:game_name, game_name)
@@ -44,6 +44,33 @@ defmodule BullsWeb.GameChannel do
            |> Game.view(user_name)
 
     {:reply, {:ok, view}, socket}
+  end
+
+  def handle_in("become_player", _, socket) do
+    game = socket.assigns[:game_name]
+    user = socket.assigns[:user_name]
+
+    # FIXME: Add some check for whether or not the game has begun
+
+    game = GameServer.peek(game)
+           |> Game.register_player(user)
+           |> Game.view(user)
+
+    {:reply, {:ok, game}, socket}
+  end
+
+  def handle_in("become_observer", _, socket) do
+    game = socket.assigns[:game_name]
+    user = socket.assigns[:user_name]
+
+    if Game.game_running?(game) do
+      {:error, %{reason: "Cannot become an observer during a game"}}
+    else
+      game = GameServer.peek(game)
+             |> Game.deregister_player(user)
+             |> Game.view(user)
+      {:reply, {:ok, game}, socket}
+    end
   end
 
   # Channels can be used in a request/response fashion
