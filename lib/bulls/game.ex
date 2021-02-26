@@ -33,7 +33,7 @@ defmodule Bulls.Game do
   def toggle_ready(state, username) do
     player = Map.get(state[:players], username)
     new_player = Map.put(player, :ready, !player[:ready])
-    players = Map.put(state[:players],username, new_player)
+    players = Map.put(state[:players], username, new_player)
     %{state | players: players}
   end
 
@@ -61,6 +61,11 @@ defmodule Bulls.Game do
         true -> %{results: [], gameWon: false, errString: "", ready: false} # equivalent to new player array
       end
     Map.put(view_state, :running, state[:running])
+  end
+
+  def view(state) do
+    view = Map.delete(state, :secret)
+    %{view | observers: MapSet.to_list(view[:observers])}
   end
 
   def guess(state, username, guess) do

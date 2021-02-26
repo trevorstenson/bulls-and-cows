@@ -17,6 +17,8 @@ const connectChannel = (userName) => {
              .receive("error", resp => {
                console.log("Unable to join", resp);
              });
+
+  gameChannel.on("update", state_update);
 };
 
 let state = {
@@ -32,6 +34,7 @@ let state = {
 let callback = null;
 
 const state_update = (st) => {
+  console.log(Date.now())
   console.log('new state', st);
   state = st;
   if (callback) {

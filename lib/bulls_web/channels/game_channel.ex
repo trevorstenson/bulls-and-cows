@@ -142,8 +142,7 @@ defmodule BullsWeb.GameChannel do
            |> Map.put(:game, game)
            |> Map.put(:user, user)
 
-    #FIXME: If everyone is ready, we should broadcast that info to everyone so that the state on the react side changes correctly
-
+    broadcast(socket, "update", game_state)
     {:reply, {:ok, view}, socket}
   end
 
@@ -159,6 +158,46 @@ defmodule BullsWeb.GameChannel do
   @impl true
   def handle_in("shout", payload, socket) do
     broadcast socket, "shout", payload
+    {:noreply, socket}
+  end
+
+  intercept ["update", "update_all"]
+
+  @impl true
+  def handle_out("update", game, socket) do
+    name = socket.assigns[:game_name]
+    user = socket.assigns[:user_name]
+    type = socket.assigns[:type]
+
+    if type == :observer do
+      view = Game.view(game)
+             |> Map.put(:type, type)
+             |> Map.put(:game, name)
+             |> Map.put(:user, user)
+      push(socket, "update", view)
+      {:noreply, socket}
+    else
+      view = Game.view(game, user)
+             |> Map.put(:type, type)
+             |> Map.put(:game, name)
+             |> Map.put(:user, user)
+      push(socket, "update", view)
+      {:noreply, socket}
+    end
+  end
+
+  def handle_out("update_all", game, socket) do
+    name = socket.assigns[:game_name]
+    user = socket.assigns[:user_name]
+    type = socket.assigns[:type]
+
+    view = Game.view(game)
+           |> Map.put(:type, type)
+           |> Map.put(:game, name)
+           |> Map.put(:user, user)
+    IO.puts("Sending to:" <> user)
+    IO.puts(Kernel.inspect(view))
+    push(socket, "update", view)
     {:noreply, socket}
   end
 
