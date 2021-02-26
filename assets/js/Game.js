@@ -80,9 +80,9 @@ const NavBar = ({gameName, playerName, playerType, ready}) => {
 
     setChannel(game, username);
     connectChannel(username);
+    console.log("All connected")
     // ch_push({username: username}, 'info')
-
-    
+    ch_push({username: username}, 'info')
     
     // setTimeout(() => {
     //   console.log("ASLKNSDKJNSDKJ")
@@ -109,7 +109,7 @@ const NavBar = ({gameName, playerName, playerType, ready}) => {
     ch_push('', 'toggle_ready');
   }
 
-  if (playerType == "observer" || playerType == "player") {
+  if (playerType === "observer" || playerType === "player") {
     return (
       <span>
       <div id="navbar" className="row">
@@ -121,10 +121,11 @@ const NavBar = ({gameName, playerName, playerType, ready}) => {
         </div>
       </div>
         <div className="row-center">
-          {(playerType == "observer") &&
+          {(playerType === "observer") &&
             <button className="button" onClick={joinAsPlayer}>Join As Player</button>
           }
           {(playerType == "player") &&
+            //FIXME: This should maybe be disabled once the game has started
             <button className="button" onClick={becomeObserver}>Become Observer</button>
           }
           {(playerType == "player") &&
@@ -171,6 +172,7 @@ const Game = () => {
   })
 
   useEffect(() => {
+    console.log("EFFECT")
     ch_join(setState);
   })
 

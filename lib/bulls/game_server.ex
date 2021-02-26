@@ -47,8 +47,8 @@ defmodule Bulls.GameServer do
     GenServer.call(reg(name), {:start_game})
   end
 
-  def guess(name, guess) do
-    GenServer.call(reg(name), {:guess, name, guess})
+  def guess(name, username, guess) do
+    GenServer.call(reg(name), {:guess, name, username, guess})
   end
 
   def peek(name) do
@@ -60,6 +60,12 @@ defmodule Bulls.GameServer do
   end
 
   def handle_call({:register_player, name, player}, _from, game) do
+
+    IO.puts("Name:")
+    IO.puts(name)
+    IO.puts("Game:")
+    IO.puts(Kernel.inspect(game))
+
     game = Bulls.Game.register_player(game, player)
     Bulls.StateAgent.put(name, game)
     {:reply, game, game}
@@ -94,9 +100,9 @@ defmodule Bulls.GameServer do
     {:reply, game, game}
   end
 
-  def handle_call({:guess, name, guess}, _from, game) do
+  def handle_call({:guess, name, username, guess}, _from, game) do
     # FIX THIS
-    game = Bulls.Game.guess(game, guess)
+    game = Bulls.Game.guess(game, username, guess)
     Bulls.StateAgent.put(name, game)
     {:reply, game, game}
   end
