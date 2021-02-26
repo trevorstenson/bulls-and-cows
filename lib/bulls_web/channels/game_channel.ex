@@ -4,39 +4,76 @@ defmodule BullsWeb.GameChannel do
   alias Bulls.Game
   alias Bulls.GameServer
 
-  def join("game:lobby", _msg, socket) do
-    {:ok, socket}
-  end
-
   def join("game:" <> gamename, %{"username" => username}, socket) do
     # might need something else here?
     # Is this idempotent, will I get the existing server?
+    # socket = socket
+    #          |> assign(:game_name, gamename)
+    #          |> assign(:user_name, username)
+    #          |> assign(:type, :observer)
+    # GameServer.start(gamename)
+    # view =
+    #   GameServer.register_observer(gamename, username)
+    #   |> Game.view
+    #   |> Map.put(:type, :observer)
+    #   |> Map.put(:game, gamename)
+    #   |> Map.put(:user, username)
+
+
     socket = socket
              |> assign(:game_name, gamename)
              |> assign(:user_name, username)
-             |> assign(:type, :observer)
-    #    IO.inspect("game: #{Kernel.inspect(GameServer.peek(gamename))}")
+
     GameServer.start(gamename)
-    view =
-      GameServer.register_observer(gamename, username)
-      |> Game.view(username)
-      |> Map.put(:type, :observer)
-      |> Map.put(:game, gamename)
-      |> Map.put(:user, username)
-    IO.puts("gamename: #{gamename}")
-    IO.puts("socket time")
+
+    game_state = GameServer.peek(gamename)
+    cond do
+      Enum.any?(game_state[:players], fn {x, y} -> x == username end) ->
+        socket = assign(socket, :type, :player)
+        IO.puts("hitting any case")
+        {:ok, socket}
+      true ->
+        GameServer.register_observer(gamename, username)
+        socket = assign(socket, :type, :observer)
+        {:ok, socket}
+    end
+    IO.inspect("pls man: #{Kernel.inspect(game_state[:players])}")
+    IO.inspect("#{username}")
     {:ok, socket}
   end
 
   def handle_in("info", %{"username" => username}, socket) do
     game = socket.assigns[:game_name]
-    # IO.puts("gamename: #{game}")
-    view = GameServer.peek(game)
-           |> Game.view(username)
-           |> Map.put(:type, :observer)
+    game_state = GameServer.peek(game)
+    type = :observer
+
+    cond do
+      Enum.any?(game_state[:players], fn {x, y} ->
+        IO.inspect("x: #{x}, y: #{Kernel.inspect(y)}, user: #{Kernel.inspect(y[:user])}, username: #{username}, result: #{x == username}")
+        x == username
+      end) ->
+        socket = assign(socket, :type, :player)
+        type = :player
+        IO.puts("hitting any case")
+        IO.inspect("socket ")
+        view = GameServer.peek(game)
+           |> Game.view
+           |> Map.put(:type, type)
            |> Map.put(:game, game)
            |> Map.put(:user, username)
     {:reply, {:ok, view}, socket}
+      true ->
+        socket = assign(socket, :type, :observer)
+        type = :observer
+        IO.inspect("socket ")
+        view = GameServer.peek(game)
+           |> Game.view
+           |> Map.put(:type, type)
+           |> Map.put(:game, game)
+           |> Map.put(:user, username)
+    {:reply, {:ok, view}, socket}
+    end
+
   end
 
   def handle_in("guess", payload, socket) do
@@ -44,23 +81,32 @@ defmodule BullsWeb.GameChannel do
     user = socket.assigns[:user_name]
     type = socket.assigns[:type] # May not be necessary as should always be player
 
-    # this needs to change to use genserver
-    game = Bulls.GameServer.guess(game, user, payload)
-    socket = assign(socket, :game, game)
+    game_view = Bulls.GameServer.guess(game, user, payload)
+    IO.inspect("game_view before cond: #{Kernel.inspect(game_view)}")
+    winners = Enum.filter(game_view[:players], fn {x, y} -> y[:gameWon] end)
+    |> Enum.map(fn {x, y} -> x end)
+    cond do
+        length(winners) > 0 ->
+          broadcast(socket, "game_over", Map.put(game_view, :winners, winners))
 
-    view = Bulls.Game.view(game, user)
+        Bulls.Game.round_over?(game_view) ->
+          game_view = Bulls.GameServer.next_turn(game)
+          broadcast(socket, "update", game_view)
+      true -> :ok
+    end
+    IO.inspect("game_view after cond: #{Kernel.inspect(game_view)}")
+    view = Bulls.Game.view(game_view)
            |> Map.put(:type, type)
-    # FIXME: Include player name and game name again
+           |> Map.put(:game, game)
+           |> Map.put(:user, user)
     {:reply, {:ok, view}, socket}
   end
 
   def handle_in("logout", _, socket) do
     game = socket.assigns[:game_name]
     user = socket.assigns[:user_name]
-    old_state = GameServer.peek(game)
-    GameServer.deregister_player(game, user)
     view = GameServer.deregister_observer(game, user)
-           |> Game.view(user)
+           |> Game.view
            |> Map.put(:type, :none)
            |> Map.put(:game, "")
            |> Map.put(:user, "")
@@ -75,21 +121,29 @@ defmodule BullsWeb.GameChannel do
 
   # FIXME: Currently players that enter become observers, technically they should just be immediately required to choose.
   #   That being said, I am not certain I care as the logic is almost certainly more costly than the points
-  def handle_in("join_game", %{"username" => user_name, "game" => game_name}, socket) do
-    GameServer.start(game_name) # Is this idempotent, will I get the existing server?
-    socket = socket
-             |> assign(:game_name, game_name)
-             |> assign(:user_name, user_name)
-             |> assign(:type, :observer)
-    view = GameServer.peek(game_name)
-           |> GameServer.register_player(user_name)
-           |> Game.view(user_name)
-           |> Map.put(:type, :observer)
-           |> Map.put(:game, game_name)
-           |> Map.put(:user, user_name)
+  # def handle_in("join_game", %{"username" => user_name, "game" => game_name}, socket) do
+  #   GameServer.start(game_name) # Is this idempotent, will I get the existing server?
+  #   socket = socket
+  #            |> assign(:game_name, game_name)
+  #            |> assign(:user_name, user_name)
+  #   game_state = GameServer.peek(game_name)
+  #   cond do
+  #     Enum.any?(game_state[:players], fn {x, y} -> x == user_name end) ->
+  #       game_state = Map.put(game_state, :type, :player)
+  #       socket = assign(socket, :type, :player)
+  #     true ->
+  #       game_state = GameServer.register_observer(game_state, user_name) |> Map.put(:type, :observer)
+  #       socket = assign(socket, :type, :observer)
+  #   end
+  #   IO.inspect("pls man: #{Kernel.inspect(game_state[:players])}")
+  #   IO.inspect("#{user_name}")
+  #   view = game_state
+  #          |> Game.view
+  #          |> Map.put(:game, game_name)
+  #          |> Map.put(:user, user_name)
 
-    {:reply, {:ok, view}, socket}
-  end
+  #   {:reply, {:ok, view}, socket}
+  # end
 
   def handle_in("become_player", _, socket) do
     game = socket.assigns[:game_name]
@@ -101,7 +155,7 @@ defmodule BullsWeb.GameChannel do
       socket = assign(socket, :type, :player)
       GameServer.register_player(game, user)
       view = GameServer.deregister_observer(game, user)
-             |> Game.view(user)
+             |> Game.view
              |> Map.put(:type, :player)
              |> Map.put(:game, game)
              |> Map.put(:user, user)
@@ -120,7 +174,7 @@ defmodule BullsWeb.GameChannel do
       socket = assign(socket, :type, :observer)
       GameServer.deregister_player(game, user)
       view = GameServer.register_observer(game, user)
-             |> Game.view(user)
+             |> Game.view
              |> Map.put(:type, :observer)
              |> Map.put(:game, game)
              |> Map.put(:user, user)
@@ -137,7 +191,7 @@ defmodule BullsWeb.GameChannel do
     # start game if all players ready. somehow kick off 30 second timer and enable guessing!
     game_state = if Game.players_ready?(game_state), do: GameServer.start_game(game), else: game_state
 
-    view = Game.view(game_state, user)
+    view = Game.view(game_state)
            |> Map.put(:type, type)
            |> Map.put(:game, game)
            |> Map.put(:user, user)
@@ -161,32 +215,11 @@ defmodule BullsWeb.GameChannel do
     {:noreply, socket}
   end
 
-  intercept ["update", "update_all"]
+  intercept ["update", "game_over"]
 
   @impl true
+  @spec handle_out(<<_::48, _::_*24>>, map, Phoenix.Socket.t()) :: {:noreply, Phoenix.Socket.t()}
   def handle_out("update", game, socket) do
-    name = socket.assigns[:game_name]
-    user = socket.assigns[:user_name]
-    type = socket.assigns[:type]
-
-    if type == :observer do
-      view = Game.view(game)
-             |> Map.put(:type, type)
-             |> Map.put(:game, name)
-             |> Map.put(:user, user)
-      push(socket, "update", view)
-      {:noreply, socket}
-    else
-      view = Game.view(game, user)
-             |> Map.put(:type, type)
-             |> Map.put(:game, name)
-             |> Map.put(:user, user)
-      push(socket, "update", view)
-      {:noreply, socket}
-    end
-  end
-
-  def handle_out("update_all", game, socket) do
     name = socket.assigns[:game_name]
     user = socket.assigns[:user_name]
     type = socket.assigns[:type]
@@ -195,8 +228,20 @@ defmodule BullsWeb.GameChannel do
            |> Map.put(:type, type)
            |> Map.put(:game, name)
            |> Map.put(:user, user)
-    IO.puts("Sending to:" <> user)
-    IO.puts(Kernel.inspect(view))
+    push(socket, "update", view)
+    {:noreply, socket}
+  end
+
+  def handle_out("game_over", game, socket) do
+    name = socket.assigns[:game_name]
+    user = socket.assigns[:user_name]
+    type = socket.assigns[:type]
+
+    view = Game.view(game)
+           |> Map.put(:type, type)
+           |> Map.put(:game, name)
+           |> Map.put(:user, user)
+           IO.inspect("just before sending: #{Kernel.inspect(view)}")
     push(socket, "update", view)
     {:noreply, socket}
   end

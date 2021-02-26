@@ -2,10 +2,11 @@ defmodule Bulls.Game do
   def new do
     %{
       secret: random_secret(),
-      gameOver: false,
       players: %{},
       observers: MapSet.new(),
       running: false,
+      guesses: MapSet.new(),
+      turn: 1
     }
   end
 
@@ -47,25 +48,40 @@ defmodule Bulls.Game do
     state[:running]
   end
 
+  def round_over?(state) do
+    Enum.all?(state[:players], fn {x, y} ->
+      Enum.count(y[:results]) == state[:turn]
+    end)
+  end
+
+  def next_turn(state) do
+    round_guesses = Enum.flat_map(state[:players], fn {key, player} ->
+      Enum.map(player[:results], fn res ->
+        Map.put(res, :user, key)
+      end)
+    end)
+    %{state | turn: (state[:turn] + 1), guesses: MapSet.new(round_guesses)}
+  end
+
   def start_game(state) do
     %{state | running: true}
   end
 
-  def view(state, username) do
-    # return map + gameOver, or this shitty default map im using
-    # so i dont have to add conditional checks to all the state in react
-    # DONT HATE ME ILL FIX IT LATER
-    view_state =
-      cond do
-        Map.has_key?(state[:players], username) -> Map.put(state[:players][username], :gameOver, state[:gameOver])
-        true -> %{results: [], gameWon: false, errString: "", ready: false} # equivalent to new player array
-      end
-    Map.put(view_state, :running, state[:running])
-  end
+  # def view(state, username) do
+  #   # return map + gameOver, or this shitty default map im using
+  #   # so i dont have to add conditional checks to all the state in react
+  #   # DONT HATE ME ILL FIX IT LATER
+  #   view_state =
+  #     cond do
+  #       Map.has_key?(state[:players], username) -> Map.put(state[:players][username], :gameOver, state[:gameOver])
+  #       true -> %{results: [], gameWon: false, errString: "", ready: false} # equivalent to new player array
+  #     end
+  #   Map.put(view_state, :running, state[:running])
+  # end
 
   def view(state) do
     view = Map.delete(state, :secret)
-    %{view | observers: MapSet.to_list(view[:observers])}
+    %{view | observers: MapSet.to_list(view[:observers]),  guesses: MapSet.to_list(view[:guesses])}
   end
 
   def guess(state, username, guess) do
@@ -95,7 +111,7 @@ defmodule Bulls.Game do
     value_matches = value_matches(guess_chars, state[:secret]) - place_matches
 
     player = state[:players][username]
-    player = %{player | results: player[:results] ++ [%{guess: guess, bulls: place_matches, cows: value_matches}]}
+    player = %{player | results: player[:results] ++ [%{turn: state[:turn], guess: guess, bulls: place_matches, cows: value_matches}]}
 
     players = Map.replace(state[:players], username, player)
     %{state | players: players}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ch_join, ch_push, setChannel, connectChannel } from "./socket"
+import _ from "lodash";
 import '../css/Game.scss'
 
 const Controls = ({resetGame, guess}) => {
@@ -64,32 +65,15 @@ const Outcome = ({won, reset}) => {
   );
 }
 
-const NavBar = ({gameName, playerName, playerType, ready}) => {
+const NavBar = ({gameName, playerName, playerType, ready, running}) => {
   const [game, setGame] = useState("");
   const [username, setUsername] = useState("");
 
   const setupPlayer = () => {
-    console.log('setting up')
-    // new Promise((resolve, reject) => {
-    //   return setChannel(game, username)
-    // }).then(() => {
-    //   return connectChannel();
-    // }).then(() => {
-    //   return ch_push({username: username}, 'info')
-    // })
-
     setChannel(game, username);
     connectChannel(username);
     console.log("All connected")
-    // ch_push({username: username}, 'info')
     ch_push({username: username}, 'info')
-    
-    // setTimeout(() => {
-    //   console.log("ASLKNSDKJNSDKJ")
-    //   ch_push({username: username}, 'info')
-    // }, 8000)
-    // ch_push({username: username}, 'info');
-
   }
 
   const joinAsPlayer = () => {
@@ -101,7 +85,6 @@ const NavBar = ({gameName, playerName, playerType, ready}) => {
   }
 
   const leaveGame = () => {
-    // gameChannel = socket.channel('game:lobby', {});
     ch_push('', 'logout');
   }
 
@@ -122,14 +105,14 @@ const NavBar = ({gameName, playerName, playerType, ready}) => {
       </div>
         <div className="row-center">
           {(playerType === "observer") &&
-            <button className="button" onClick={joinAsPlayer}>Join As Player</button>
+            <button className="button" disabled={running} onClick={joinAsPlayer}>Join As Player</button>
           }
           {(playerType == "player") &&
-            //FIXME: This should maybe be disabled once the game has started
-            <button className="button" onClick={becomeObserver}>Become Observer</button>
+            <button className="button" disabled={running} onClick={becomeObserver}>Become Observer</button>
           }
-          {(playerType == "player") &&
-            <span>Ready?
+          {(playerType == "player" && !running) &&
+            <span>
+              Ready?
               <input type="checkbox"
                 checked={ready}
                 onChange={handleReadyCheck}
@@ -186,34 +169,105 @@ const Game = () => {
 
   const isGameWon = state.gameWon;
   const isGameLost = !state.gameWon; //Fixme: New rules for won vs lost due to new game rules
+  let playerGuesses = [];
+  if (!_.isEmpty(state.players) && state.type == "player") {
+    console.log('state user: ', state.user)
+    console.log('state players: ', state.players)
+    playerGuesses = state.players[state.user].results;
+  }
+  console.log('player guesses: ', playerGuesses)
 
-  // yes ik this is ugly but functionality first beauty later \o/
   let mainContent = null;
 
-  if (state.running) {
+
+  if (state.winners) {
+    if (state.type == "player") {
+      mainContent =
+        <div className="container">
+          <div className="row">
+            <div className="column column-33">
+              <h2>Current Turn: {state.turn}</h2>
+            </div>
+          </div>
+          <div className="row">
+            {(state.winners.indexOf(state.user) >= 0) ?
+              <h2>You were a winner!</h2> : <h2>You lost the game :(</h2>
+            }
+          </div>
+        </div>
+    } else {
+      mainContent =
+      <div className="container">
+        <div className="row">
+          <div className="column column-33">
+            <h2>Current Turn: {state.turn}</h2>
+          </div>
+        </div>
+        <div className="row">
+          <h2>The winners are:</h2>
+
+          <ul>
+            {state.winners.map(winner => {
+              return (
+                <li>
+                  <span>{winner}</span>
+                </li>
+              )
+            })}
+          </ul>
+        </div>
+      </div>
+    }
+    // game over
+  } else if (state.running) {
     mainContent =
       <div className="container">
         <div className="row">
           <div className="column column-33">
-            <h2>Guesses Remaining: {state.remaining}</h2>
+            <h2>Current Turn: {state.turn}</h2>
           </div>
         </div>
-        <Error errString={state.errString}/>
-        <Controls resetGame={resetGame} guess={guess}/>
+        {(state.type == "player") &&
+        <span>
+          <Error errString={state.players[state.user].errString}/>
+          <Controls resetGame={resetGame} guess={guess}/>
+          <div className="row">
+            <div className="column column-10"></div>
+            <div className="column column-20"><h4>Guess</h4></div>
+            <div className="column column-25"><h4>Result</h4></div>
+          </div>
+        </span>
+        }
+        {(state.type == "player") &&
+          playerGuesses.map((result, index) => {
+            return (
+              <div className="row" key={index}>
+                <div className="column column-10"></div>
+                <div className="column column-20"><b>{result.guess}</b></div>
+                <div className="column column-25"><b>{`${result.bulls} bulls, ${result.cows} cows`}</b></div>
+              </div>
+            );
+          })
+        }
+        <div className="row">OTHER GUESSES</div>
         <div className="row">
-          <div className="column column-10"></div>
-          <div className="column column-20"><h4>Guess</h4></div>
+          <div className="column column-10">Turn</div>
+          <div className="column column-15">Username</div>
+          <div className="column column-10"><h4>Guess</h4></div>
           <div className="column column-25"><h4>Result</h4></div>
         </div>
-        {state.results.map((result, index) => {
-          return (
-            <div className="row" key={index}>
-              <div className="column column-10"></div>
-              <div className="column column-20"><b>{result.guess}</b></div>
-              <div className="column column-25"><b>{`${result.bulls} bulls, ${result.cows} cows`}</b></div>
-            </div>
-          );
-        })}
+        {
+          state.guesses.filter(g => g.user != state.user).map((guess, index) => {
+            return (
+              <div className="row" key={index}>
+                <div className="column column-10">{guess.turn}</div>
+                <div className="column column-15">{guess.user}</div>
+                <div className="column column-10"><b>{guess.guess}</b></div>
+                <div className="column column-25"><b>{`${guess.bulls} bulls, ${guess.cows} cows`}</b></div>
+              </div>
+            )
+          })
+        }
       </div>
   } else if (!state.type) {
     // not in a game
@@ -247,7 +301,7 @@ const Game = () => {
 
   return (
     <div className="App">
-      <NavBar playerType={state.type} gameName={state.game} playerName={state.user} ready={state.ready}/>
+      <NavBar playerType={state.type} gameName={state.game} playerName={state.user} ready={state.ready} running={state.running}/>
       {mainContent}
     </div>
   );

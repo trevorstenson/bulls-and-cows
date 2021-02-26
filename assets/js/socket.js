@@ -19,6 +19,7 @@ const connectChannel = (userName) => {
              });
 
   gameChannel.on("update", state_update);
+  gameChannel.on("game_over", state_update);
 };
 
 let state = {
