@@ -3,7 +3,7 @@ import { ch_join, ch_push, setChannel, connectChannel } from "./socket"
 import _ from "lodash";
 import '../css/Game.scss'
 
-const Controls = ({resetGame, guess}) => {
+const Controls = ({guess}) => {
   const [input, setInput] = useState("");
 
   const catchEnter = (e) => {
@@ -27,7 +27,6 @@ const Controls = ({resetGame, guess}) => {
         </div>
         <div className="column column-25">
           <button className="button" onClick={() => submitGuess(input)}>Guess</button>
-          <button className="button" onClick={resetGame}>Reset</button>
         </div>
       </div>
   );
@@ -159,10 +158,6 @@ const Game = () => {
     ch_join(setState);
   })
 
-  const resetGame = () => {
-    ch_push('', 'reset');
-  }
-
   const guess = (guess) => {
     ch_push(guess, 'guess');
   }
@@ -230,7 +225,7 @@ const Game = () => {
         {(state.type == "player") &&
         <span>
           <Error errString={state.players[state.user].errString}/>
-          <Controls resetGame={resetGame} guess={guess}/>
+          <Controls guess={guess}/>
           <div className="row">
             <div className="column column-10"></div>
             <div className="column column-20"><h4>Guess</h4></div>
@@ -294,9 +289,9 @@ const Game = () => {
         </div>
       </div>
   } else if (isGameWon) {
-    mainContent = <Outcome won={true} reset={resetGame}/>
+    mainContent = <Outcome won={true}/>
   } else if (isGameLost) {
-    mainContent = <Outcome won={false} reset={resetGame}/>
+    mainContent = <Outcome won={false}/>
   }
 
   return (
